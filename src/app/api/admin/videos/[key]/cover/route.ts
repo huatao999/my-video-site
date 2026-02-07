@@ -44,7 +44,11 @@ export async function POST(req: Request, {params}: {params: Promise<{key: string
 
     // 确定文件扩展名
     const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
-    const coverKey = `covers/${key}-${locale}.${ext}`;
+    // 自动命名：ep1.mp4 -> covers/ep1-zh.jpg；ep1_en.mp4 -> covers/ep1-en.jpg
+    let basename = key.includes(".") ? key.slice(0, key.lastIndexOf(".")) : key;
+    if (basename.endsWith("_en")) basename = basename.slice(0, -3);
+    const suffix = locale === "en" ? "en" : "zh";
+    const coverKey = `covers/${basename}-${suffix}.${ext}`;
 
     // 解码 Base64 数据
     const imageBuffer = Buffer.from(coverData.replace(/^data:image\/\w+;base64,/, ""), "base64");

@@ -1,9 +1,15 @@
 import {getRequestConfig} from "next-intl/server";
+import {hasLocale} from "next-intl";
+import {routing} from "./src/i18n/routing";
 
-// 单语言：始终使用中文
-export default getRequestConfig(async () => {
+export default getRequestConfig(async ({requestLocale}) => {
+  const requested = await requestLocale;
+  const locale = hasLocale(routing.locales, requested) ? requested : routing.defaultLocale;
+
+  const messages = (await import(`./messages/${locale}.json`)).default;
+
   return {
-    locale: "zh",
-    messages: (await import("./messages/zh.json")).default,
+    locale,
+    messages,
   };
 });

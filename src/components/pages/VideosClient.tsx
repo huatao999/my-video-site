@@ -22,7 +22,7 @@ type VideosResponse = {
   keyCount: number;
 };
 
-export default function VideosClient() {
+export default function VideosClient({locale = "zh"}: {locale?: string}) {
   const t = useTranslations("videos");
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,16 +36,16 @@ export default function VideosClient() {
     return `/api/videos/stream?key=${encodeURIComponent(coverKey)}`;
   }
 
-  async function loadVideos(prefix?: string, continuationToken?: string) {
+  async function loadVideos(title?: string, continuationToken?: string) {
     setLoading(true);
     setError(null);
 
     try {
       const params = new URLSearchParams();
-      if (prefix) params.set("prefix", prefix);
+      if (title && title.trim()) params.set("title", title.trim());
       if (continuationToken) params.set("continuationToken", continuationToken);
       params.set("maxKeys", "20");
-      params.set("locale", "zh");
+      params.set("locale", locale);
 
       const res = await fetch(`/api/videos/list?${params.toString()}`);
       if (!res.ok) {
@@ -88,11 +88,11 @@ export default function VideosClient() {
 
   function handleSearch() {
     if (loading) return;
-    const prefix = searchQuery.trim() || undefined;
+    const title = searchQuery.trim() || undefined;
     setNextToken(null);
     setHasMore(false);
     setError(null);
-    loadVideos(prefix);
+    loadVideos(title);
   }
 
   function handleLoadMore() {
@@ -100,7 +100,7 @@ export default function VideosClient() {
   }
 
   function getVideoUrl(videoKey: string): string {
-    return `/videos/${encodeURIComponent(videoKey)}`;
+    return `/${locale}/videos/${encodeURIComponent(videoKey)}`;
   }
 
   function formatFileSize(bytes: number): string {

@@ -20,7 +20,7 @@ type VideosResponse = {
   keyCount: number;
 };
 
-export default function HomeClient() {
+export default function HomeClient({locale = "zh"}: {locale?: string}) {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export default function HomeClient() {
     setError(null);
 
     try {
-      const res = await fetch(`/api/videos/list?locale=zh&maxKeys=20`);
+      const res = await fetch(`/api/videos/list?locale=${locale}&maxKeys=20`);
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as {error?: string; hint?: string};
         const msg = data.hint ? `${data.error}。${data.hint}` : (data.error || `加载视频列表失败：${res.status}`);
@@ -99,7 +99,7 @@ export default function HomeClient() {
           {videos.map((video) => (
             <Link
               key={video.key}
-              href={`/videos/${encodeURIComponent(video.key)}`}
+              href={`/${locale}/videos/${encodeURIComponent(video.key)}`}
               className="group overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900/30 transition-all hover:border-neutral-700 hover:bg-neutral-900/50 active:bg-neutral-900/60 touch-manipulation"
             >
               <div className="aspect-video w-full overflow-hidden bg-neutral-950">

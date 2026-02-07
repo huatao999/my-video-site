@@ -14,6 +14,8 @@ export default function AdminUploadPage() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [videoKey, setVideoKey] = useState("");
+  const [langZh, setLangZh] = useState(true);
+  const [langEn, setLangEn] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -34,7 +36,7 @@ export default function AdminUploadPage() {
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!file || !videoKey.trim() || uploading) return;
+    if (!file || !videoKey.trim() || uploading || (!langZh && !langEn)) return;
 
     setUploading(true);
     setError(null);
@@ -42,11 +44,18 @@ export default function AdminUploadPage() {
     setProgress(null);
 
     try {
+      const rawKey = videoKey.trim();
+      const ext = rawKey.includes(".") ? rawKey.slice(rawKey.lastIndexOf(".")) : ".mp4";
+      const base = rawKey.includes(".") ? rawKey.slice(0, rawKey.lastIndexOf(".")) : rawKey;
+
+      // 仅英文时自动命名为 *_en.mp4
+      const finalKey = langEn && !langZh ? `${base}_en${ext}` : rawKey;
+
       const presignRes = await fetch("/api/videos/presign-upload", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
-          key: videoKey.trim(),
+          key: finalKey,
           contentType: file.type || "video/mp4",
           expires: 900,
         }),
@@ -82,22 +91,28 @@ export default function AdminUploadPage() {
         xhr.send(file);
       });
 
-      const metaTitle = title.trim() || videoKey.trim();
+      const metaTitle = title.trim() || finalKey;
       const metaDescription = description.trim();
 
-      const res = await fetch(`/api/admin/videos/${encodeURIComponent(videoKey.trim())}/metadata`, {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          locale: "zh",
-          title: metaTitle,
-          description: metaDescription,
-        }),
-      });
+      const localesToSave: Array<"zh" | "en"> = [];
+      if (langZh) localesToSave.push("zh");
+      if (langEn) localesToSave.push("en");
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(`保存元数据失败: ${res.status} - ${errorData.error || "未知错误"}`);
+      for (const loc of localesToSave) {
+        const res = await fetch(`/api/admin/videos/${encodeURIComponent(finalKey)}/metadata`, {
+          method: "PUT",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            locale: loc,
+            title: metaTitle,
+            description: metaDescription,
+          }),
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(`保存元数据失败 (${loc}): ${res.status} - ${errorData.error || "未知错误"}`);
+        }
       }
 
       setSuccess(true);
@@ -151,6 +166,37 @@ export default function AdminUploadPage() {
                 文件大小: {(file.size / 1024 / 1024).toFixed(2)} MB | 类型: {file.type || "未知"}
               </p>
             )}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              选择语言
+            </label>
+            <div className="flex gap-6">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={langZh}
+                  onChange={(e) => setLangZh(e.target.checked)}
+                  disabled={uploading}
+                  className="h-4 w-4 rounded border-neutral-600"
+                />
+                <span>中文</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={langEn}
+                  onChange={(e) => setLangEn(e.target.checked)}
+                  disabled={uploading}
+                  className="h-4 w-4 rounded border-neutral-600"
+                />
+                <span>英文</span>
+              </label>
+            </div>
+            <p className="mt-1 text-xs text-neutral-400">
+              仅英文时自动将视频命名为 *_en.mp4（如 ep1.mp4 → ep1_en.mp4）
+            </p>
           </div>
 
           <div>

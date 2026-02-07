@@ -1,9 +1,7 @@
-import {NextResponse} from "next/server";
+import createMiddleware from "next-intl/middleware";
+import {routing} from "./src/i18n/routing";
 
-// 单语言中文站：无需 locale 路由，直接放行
-export function middleware() {
-  return NextResponse.next();
-}
+export default createMiddleware(routing);
 
 export const config = {
   matcher: ["/((?!api|_next|admin|.*\\..*).*)"],

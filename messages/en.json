@@ -7,7 +7,7 @@
   "videos": {
     "title": "Video Library",
     "subtitle": "Browse all available videos",
-    "searchPlaceholder": "Search videos (by filename prefix)",
+    "searchPlaceholder": "Search videos (by title)",
     "search": "Search",
     "loading": "Loading...",
     "noVideos": "No videos found",

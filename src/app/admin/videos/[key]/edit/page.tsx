@@ -28,6 +28,7 @@ export default function AdminVideoEditPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const [editLocale, setEditLocale] = useState<"zh" | "en">("zh");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -48,13 +49,13 @@ export default function AdminVideoEditPage() {
       setCoverFile(null);
       return;
     }
-    const localeData = metadata.locales["zh"];
+    const localeData = metadata.locales[editLocale];
     setTitle(localeData?.title ?? "");
     setDescription(localeData?.description ?? "");
     setCoverUrl(localeData?.coverUrl ?? null);
     setCoverPreview(null);
     setCoverFile(null);
-  }, [metadata]);
+  }, [metadata, editLocale]);
 
   async function loadMetadata() {
     try {
@@ -114,7 +115,7 @@ export default function AdminVideoEditPage() {
           method: "POST",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
-            locale: "zh",
+            locale: editLocale,
             coverData,
             contentType,
           }),
@@ -130,7 +131,7 @@ export default function AdminVideoEditPage() {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
-          locale: "zh",
+          locale: editLocale,
           title: title.trim(),
           description: description.trim(),
           coverUrl: finalCoverUrl || undefined,
@@ -153,23 +154,6 @@ export default function AdminVideoEditPage() {
     }
   }
 
-  useEffect(() => {
-    async function loadCoverPreview(url: string) {
-      try {
-        const res = await fetch(`/api/videos/presign-play?key=${encodeURIComponent(url)}&expires=3600`);
-        if (res.ok) {
-          const data = await res.json();
-          setCoverUrl(data.url);
-        }
-      } catch (e) {
-        console.error("Failed to load cover preview:", e);
-      }
-    }
-
-    if (coverUrl && !coverFile && !coverPreview && !coverUrl.startsWith("http")) {
-      loadCoverPreview(coverUrl);
-    }
-  }, [coverUrl, coverFile, coverPreview]);
 
   if (loading) {
     return (
@@ -205,12 +189,40 @@ export default function AdminVideoEditPage() {
 
       <div className="space-y-6 rounded-xl border border-neutral-800 bg-neutral-900/30 p-6">
         <div>
+          <label className="mb-2 block text-sm font-medium">编辑语言</label>
+          <div className="flex gap-6">
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="radio"
+                name="editLocale"
+                checked={editLocale === "zh"}
+                onChange={() => setEditLocale("zh")}
+                disabled={saving}
+                className="h-4 w-4"
+              />
+              <span>中文 (封面: epX-zh.jpg)</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="radio"
+                name="editLocale"
+                checked={editLocale === "en"}
+                onChange={() => setEditLocale("en")}
+                disabled={saving}
+                className="h-4 w-4"
+              />
+              <span>英文 (封面: epX-en.jpg)</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
           <label className="mb-2 block text-sm font-medium">视频封面</label>
           <div className="space-y-4">
             {(coverPreview || coverUrl) && (
               <div className="relative aspect-video max-w-md overflow-hidden rounded-lg border border-neutral-700 bg-neutral-950">
                 <img
-                  src={coverPreview || coverUrl || ""}
+                  src={coverPreview || (coverUrl?.startsWith("http") ? coverUrl : `/api/videos/stream?key=${encodeURIComponent(coverUrl || "")}`) || ""}
                   alt="Cover preview"
                   className="h-full w-full object-cover"
                 />

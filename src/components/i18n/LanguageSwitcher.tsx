@@ -1,14 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import {usePathname} from "next/navigation";
+import {useRouter} from "next/navigation";
 import {locales, type Locale} from "@/i18n/locales";
 
-function replaceLocaleInPath(pathname: string, nextLocale: string) {
+function replaceLocaleInPath(pathname: string, nextLocale: string): string {
   const segments = pathname.split("/").filter(Boolean);
   if (segments.length === 0) return `/${nextLocale}`;
-
-  // If current path starts with a locale, replace it; otherwise prefix it.
   if ((locales as readonly string[]).includes(segments[0])) {
     segments[0] = nextLocale;
     return `/${segments.join("/")}`;
@@ -18,6 +16,7 @@ function replaceLocaleInPath(pathname: string, nextLocale: string) {
 
 export default function LanguageSwitcher({currentLocale}: {currentLocale: Locale}) {
   const pathname = usePathname() || "/";
+  const router = useRouter();
 
   return (
     <nav className="flex items-center gap-1.5 sm:gap-2 text-xs">
@@ -25,9 +24,10 @@ export default function LanguageSwitcher({currentLocale}: {currentLocale: Locale
         const href = replaceLocaleInPath(pathname, loc);
         const active = loc === currentLocale;
         return (
-          <Link
+          <button
             key={loc}
-            href={href}
+            type="button"
+            onClick={() => router.push(href)}
             className={[
               "rounded-md px-2.5 py-2 transition touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center",
               active ? "bg-white text-black" : "bg-neutral-800 text-neutral-200 hover:bg-neutral-700 active:bg-neutral-600",
@@ -35,7 +35,7 @@ export default function LanguageSwitcher({currentLocale}: {currentLocale: Locale
             aria-current={active ? "page" : undefined}
           >
             {loc.toUpperCase()}
-          </Link>
+          </button>
         );
       })}
     </nav>

@@ -3,14 +3,16 @@
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {useTranslations} from "next-intl";
+import type {Locale} from "@/i18n/locales";
 
-export default function Navigation() {
+export default function Navigation({locale}: {locale: Locale}) {
   const t = useTranslations("navigation");
   const pathname = usePathname();
 
+  const base = `/${locale}`;
   const navItems = [
-    {href: "/", label: t("home")},
-    {href: "/videos", label: t("videos")},
+    {href: base, label: t("home")},
+    {href: `${base}/videos`, label: t("videos")},
   ];
 
   return (

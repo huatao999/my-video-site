@@ -7,7 +7,7 @@
   "videos": {
     "title": "视频列表",
     "subtitle": "浏览所有可用视频",
-    "searchPlaceholder": "搜索视频（按文件名前缀）",
+    "searchPlaceholder": "搜索视频（按视频标题）",
     "search": "搜索",
     "loading": "加载中...",
     "noVideos": "暂无视频",
