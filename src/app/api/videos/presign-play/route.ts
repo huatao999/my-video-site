@@ -2,7 +2,7 @@ import {GetObjectCommand} from "@aws-sdk/client-s3";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 import {z} from "zod";
 import {env} from "@/lib/env";
-import {getR2Client} from "@/lib/r2/client";
+import {getR2Client, resolveObjectKey} from "@/lib/r2/client";
 
 const querySchema = z.object({
   key: z.string().min(1),
@@ -13,7 +13,13 @@ const querySchema = z.object({
 export async function GET(req: Request) {
   try {
     if (!env.R2_BUCKET) {
-      return Response.json({error: "R2_BUCKET missing"}, {status: 500});
+      return Response.json(
+        {
+          error: "R2_BUCKET missing",
+          hint: "请在 Netlify Site settings > Environment variables 中设置 R2_BUCKET 等 R2 环境变量",
+        },
+        {status: 500}
+      );
     }
 
     const url = new URL(req.url);
@@ -23,13 +29,14 @@ export async function GET(req: Request) {
     }
 
     const {key, expires} = parsed.data;
+    const resolvedKey = resolveObjectKey(key);
     const client = getR2Client();
 
     const signed = await getSignedUrl(
       client,
       new GetObjectCommand({
         Bucket: env.R2_BUCKET,
-        Key: key,
+        Key: resolvedKey,
       }),
       {expiresIn: expires},
     );

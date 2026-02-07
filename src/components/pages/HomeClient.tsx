@@ -40,8 +40,9 @@ export default function HomeClient() {
     try {
       const res = await fetch(`/api/videos/list?locale=zh&maxKeys=20`);
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `加载视频列表失败：${res.status}`);
+        const data = (await res.json().catch(() => ({}))) as {error?: string; hint?: string};
+        const msg = data.hint ? `${data.error}。${data.hint}` : (data.error || `加载视频列表失败：${res.status}`);
+        throw new Error(msg);
       }
 
       const data = (await res.json()) as VideosResponse;
@@ -83,8 +84,9 @@ export default function HomeClient() {
     try {
       const res = await fetch(`/api/videos/presign-play?key=${encodeURIComponent(videoKey.trim())}`);
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `获取播放 URL 失败：${res.status}`);
+        const data = (await res.json().catch(() => ({}))) as {error?: string; hint?: string};
+        const msg = data.hint ? `${data.error}。${data.hint}` : (data.error || `获取播放 URL 失败：${res.status}`);
+        throw new Error(msg);
       }
       const data = await res.json();
       setPlayUrl(data.url);

@@ -24,7 +24,13 @@ function isVideoFile(key: string): boolean {
 export async function GET(req: Request) {
   try {
     if (!env.R2_BUCKET) {
-      return Response.json({error: "R2_BUCKET missing"}, {status: 500});
+      return Response.json(
+        {
+          error: "R2_BUCKET missing",
+          hint: "请在 Netlify Site settings > Environment variables 中设置 R2_BUCKET、R2_ACCOUNT_ID、R2_ACCESS_KEY_ID、R2_SECRET_ACCESS_KEY",
+        },
+        {status: 500}
+      );
     }
 
     const url = new URL(req.url);
@@ -40,9 +46,11 @@ export async function GET(req: Request) {
     // 因为标题搜索是在内存中进行的，我们需要获取更多数据
     const fetchMaxKeys = title && title.trim() ? Math.max(maxKeys * 3, 150) : maxKeys;
 
+    const effectivePrefix = prefix || env.R2_PREFIX || undefined;
+
     const command = new ListObjectsV2Command({
       Bucket: env.R2_BUCKET,
-      Prefix: prefix,
+      Prefix: effectivePrefix,
       MaxKeys: fetchMaxKeys,
       ContinuationToken: continuationToken,
     });

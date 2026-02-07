@@ -5,9 +5,10 @@
   command = "npm run build"
   publish = ".next"
 
-# 必需的环境变量（请在 Netlify 控制台设置，不要提交密钥到代码库）：
+# 必需的环境变量（请在 Netlify Site settings > Environment variables 中设置）：
 # R2_ACCOUNT_ID      - Cloudflare R2 账户 ID
-# R2_ACCESS_KEY_ID   - R2 Access Key ID（32 位）
+# R2_ACCESS_KEY_ID   - R2 Access Key ID（32 位 S3 兼容密钥）
 # R2_SECRET_ACCESS_KEY - R2 Secret Access Key
-# R2_BUCKET          - R2 存储桶名称
-# ADMIN_PASSWORD     - 后台管理员密码（可选，用于 /admin 登录）
+# R2_BUCKET          - R2 存储桶名称（在 Cloudflare R2 控制台创建时的名称）
+# R2_PREFIX          - 可选。若视频在存储桶的 my-video-site/ 子目录下，设为 "my-video-site/"
+# ADMIN_PASSWORD     - 可选，后台管理员密码（用于 /admin 登录）

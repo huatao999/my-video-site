@@ -12,6 +12,8 @@ const envSchema = z.object({
     ),
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET: z.string().optional(),
+  // 可选：R2 对象键前缀。若视频在 my-video-site/ 下，则设为 "my-video-site/"
+  R2_PREFIX: z.string().optional(),
   // Optional: public CDN base, e.g. https://cdn.example.com
   PUBLIC_CDN_BASE_URL: z.string().url().optional(),
   // VAST Ad URLs (ExoClick / Adsterra)
@@ -38,6 +40,7 @@ export const env = envSchema.parse({
   R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
   R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
   R2_BUCKET: process.env.R2_BUCKET,
+  R2_PREFIX: process.env.R2_PREFIX,
   PUBLIC_CDN_BASE_URL: process.env.PUBLIC_CDN_BASE_URL,
   VAST_EXOCLICK_PRE_ROLL: process.env.VAST_EXOCLICK_PRE_ROLL,
   VAST_EXOCLICK_MID_ROLL: process.env.VAST_EXOCLICK_MID_ROLL,
