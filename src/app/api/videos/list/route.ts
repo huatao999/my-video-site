@@ -78,38 +78,24 @@ export async function GET(req: Request) {
         const key = obj.Key!;
         const metadata = metadataMap.get(key);
 
-        // 如果指定了语言过滤，必须严格检查该语言是否有有效的元数据
-        if (locale) {
-          // 如果没有元数据，跳过该视频
-          if (!metadata) {
-            return null;
-          }
-          
-          const localeData = metadata.locales[locale];
-          // 严格检查：该语言必须有标题且标题不为空字符串
-          // 如果该语言没有标题或标题为空，说明该视频不属于该语言，跳过
-          if (!localeData || !localeData.title || localeData.title.trim() === "") {
-            return null;
-          }
-        }
-
-        // 如果没有指定语言过滤，返回所有视频（用于后台管理）
-        // 如果指定了语言，只返回该语言的视频
-        let localeData;
+        // 显示标题、描述、封面：优先使用元数据，无元数据时用文件名
         let displayTitle: string;
         let displayDescription: string;
         let displayCoverUrl: string | undefined;
 
         if (locale) {
-          // 如果指定了语言，必须使用该语言的元数据
-          localeData = metadata?.locales[locale];
-          // 如果指定了语言但没有该语言的元数据，跳过
-          if (!localeData || !localeData.title || localeData.title.trim() === "") {
-            return null;
+          // 如果指定了语言，优先使用该语言的元数据
+          const localeData = metadata?.locales[locale];
+          if (localeData && localeData.title && localeData.title.trim() !== "") {
+            displayTitle = localeData.title;
+            displayDescription = localeData.description || "";
+            displayCoverUrl = localeData.coverUrl;
+          } else {
+            // 无该语言元数据时，用文件名作为标题，仍显示该视频
+            displayTitle = key.split("/").pop()?.replace(/\.[^.]+$/, "") || key;
+            displayDescription = "";
+            displayCoverUrl = undefined;
           }
-          displayTitle = localeData.title;
-          displayDescription = localeData.description || "";
-          displayCoverUrl = localeData.coverUrl;
         } else {
           // 如果没有指定语言（后台管理），优先使用第一个有标题的语言，否则使用文件名
           if (metadata) {
@@ -120,7 +106,7 @@ export async function GET(req: Request) {
             });
             
             if (firstLocaleWithTitle) {
-              localeData = metadata.locales[firstLocaleWithTitle];
+              const localeData = metadata.locales[firstLocaleWithTitle];
               displayTitle = localeData.title;
               displayDescription = localeData.description || "";
               displayCoverUrl = localeData.coverUrl;
