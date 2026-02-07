@@ -84,7 +84,7 @@ export default function VideosClient({locale = "zh"}: {locale?: string}) {
 
   useEffect(() => {
     loadVideos();
-  }, []);
+  }, [locale]);
 
   function handleSearch() {
     if (loading) return;

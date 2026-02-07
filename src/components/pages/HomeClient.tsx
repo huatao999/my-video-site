@@ -30,7 +30,7 @@ export default function HomeClient({locale = "zh"}: {locale?: string}) {
 
   useEffect(() => {
     loadVideos();
-  }, []);
+  }, [locale]);
 
   async function loadVideos() {
     setLoading(true);

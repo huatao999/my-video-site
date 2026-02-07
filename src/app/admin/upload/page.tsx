@@ -51,22 +51,10 @@ export default function AdminUploadPage() {
       // 仅英文时自动命名为 *_en.mp4
       const finalKey = langEn && !langZh ? `${base}_en${ext}` : rawKey;
 
-      const presignRes = await fetch("/api/videos/presign-upload", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          key: finalKey,
-          contentType: file.type || "video/mp4",
-          expires: 900,
-        }),
-      });
-
-      if (!presignRes.ok) {
-        const data = await presignRes.json().catch(() => ({}));
-        throw new Error(data.error || "获取上传 URL 失败");
-      }
-
-      const {url} = await presignRes.json();
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("key", finalKey);
+      formData.append("contentType", file.type || "video/mp4");
 
       const xhr = new XMLHttpRequest();
 
@@ -83,12 +71,18 @@ export default function AdminUploadPage() {
       await new Promise<void>((resolve, reject) => {
         xhr.addEventListener("load", () => {
           if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else reject(new Error(`上传失败：HTTP ${xhr.status}`));
+          else {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              reject(new Error(data.error || data.message || `上传失败：HTTP ${xhr.status}`));
+            } catch {
+              reject(new Error(`上传失败：HTTP ${xhr.status}`));
+            }
+          }
         });
         xhr.addEventListener("error", () => reject(new Error("上传失败：网络错误")));
-        xhr.open("PUT", url);
-        xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
-        xhr.send(file);
+        xhr.open("POST", "/api/videos/upload");
+        xhr.send(formData);
       });
 
       const metaTitle = title.trim() || finalKey;

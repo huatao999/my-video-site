@@ -14,9 +14,21 @@ pnpm dev
 bun dev
 ```
 
+**注意：必须先启动服务器再访问**。若直接打开 http://localhost:3000 出现「连接失败」，请先在终端执行 `npm run dev`。
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+### 推送到 GitHub
+
+```bash
+git add .
+git commit -m "fix: 上传代理、默认语言 ZH、ZH/EN 切换刷新视频列表"
+git push origin main
+```
+
+详见 [docs/LOCAL_DEVELOPMENT_AND_GIT.md](docs/LOCAL_DEVELOPMENT_AND_GIT.md)。
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
