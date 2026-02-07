@@ -1,47 +1,20 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useMemo} from "react";
 import {useRouter} from "next/navigation";
 import {useTranslations} from "next-intl";
 import VideoPlayer from "@/components/video/VideoPlayer";
 import LikeButton from "@/components/video/LikeButton";
 import CommentSection from "@/components/video/CommentSection";
 
-type PresignPlayResponse = {
-  url: string;
-  expiresIn: number;
-};
-
 export default function VideoDetailClient({videoKey}: {videoKey: string}) {
   const t = useTranslations("videos");
   const router = useRouter();
-  const [playUrl, setPlayUrl] = useState<string>("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function loadVideo() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const res = await fetch(`/api/videos/presign-play?key=${encodeURIComponent(videoKey)}`);
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || `加载视频失败：${res.status}`);
-        }
-
-        const data = (await res.json()) as PresignPlayResponse;
-        setPlayUrl(data.url);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "未知错误");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadVideo();
-  }, [videoKey]);
+  // 使用流式代理 URL，避免 R2 预签名 URL 的 CORS 问题
+  const playUrl = useMemo(
+    () => `/api/videos/stream?key=${encodeURIComponent(videoKey)}`,
+    [videoKey]
+  );
 
   const videoTitle = videoKey.split("/").pop()?.replace(/\.[^.]+$/, "") || videoKey;
 
@@ -62,17 +35,7 @@ export default function VideoDetailClient({videoKey}: {videoKey: string}) {
         <p className="text-xs text-neutral-400">{videoKey}</p>
       </div>
 
-      {loading && (
-        <div className="flex justify-center py-12">
-          <div className="text-sm text-neutral-400">{t("loading")}</div>
-        </div>
-      )}
-
-      {error && (
-        <div className="rounded-md border border-red-800 bg-red-900/20 px-4 py-3 text-sm text-red-300">{error}</div>
-      )}
-
-      {playUrl && !loading && !error && (
+      {playUrl && (
         <>
           <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-3">
             <VideoPlayer key={playUrl} src={playUrl} poster="" vastTagUrl={null} />

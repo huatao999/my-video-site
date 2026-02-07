@@ -26,7 +26,6 @@ export default function HomeClient() {
   const [error, setError] = useState<string | null>(null);
   const [videoKey, setVideoKey] = useState<string>("ep1.mp4");
   const [playUrl, setPlayUrl] = useState<string>("");
-  const [playLoading, setPlayLoading] = useState(false);
   const [playError, setPlayError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,18 +49,9 @@ export default function HomeClient() {
       const videosWithCovers = await Promise.all(
         data.videos.map(async (video) => {
           if (video.coverUrl) {
-            try {
-              const coverRes = await fetch(
-                `/api/videos/presign-play?key=${encodeURIComponent(video.coverUrl)}&expires=3600`
-              );
-              if (coverRes.ok) {
-                const coverData = await coverRes.json();
-                return {...video, coverUrl: coverData.url};
-              }
-            } catch (e) {
-              // eslint-disable-next-line no-console
-              console.error("Failed to load cover:", e);
-            }
+            // 使用流式代理 URL 作为封面，避免 R2 预签名 URL 的 CORS 问题
+            const coverStreamUrl = `/api/videos/stream?key=${encodeURIComponent(video.coverUrl)}`;
+            return {...video, coverUrl: coverStreamUrl};
           }
           return video;
         })
@@ -75,27 +65,13 @@ export default function HomeClient() {
     }
   }
 
-  async function handlePlay() {
+  function handlePlay() {
     if (!videoKey.trim()) return;
 
     setPlayError(null);
-    setPlayLoading(true);
-
-    try {
-      const res = await fetch(`/api/videos/presign-play?key=${encodeURIComponent(videoKey.trim())}`);
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as {error?: string; hint?: string};
-        const msg = data.hint ? `${data.error}。${data.hint}` : (data.error || `获取播放 URL 失败：${res.status}`);
-        throw new Error(msg);
-      }
-      const data = await res.json();
-      setPlayUrl(data.url);
-    } catch (e) {
-      setPlayError(e instanceof Error ? e.message : "未知错误");
-      setPlayUrl("");
-    } finally {
-      setPlayLoading(false);
-    }
+    // 使用流式代理 URL，避免 R2 预签名 URL 的 CORS 问题
+    const streamUrl = `/api/videos/stream?key=${encodeURIComponent(videoKey.trim())}`;
+    setPlayUrl(streamUrl);
   }
 
   return (
@@ -188,7 +164,7 @@ export default function HomeClient() {
               value={videoKey}
               onChange={(e) => setVideoKey(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !playLoading && videoKey.trim()) handlePlay();
+                if (e.key === "Enter" && videoKey.trim()) handlePlay();
               }}
               placeholder="ep1.mp4"
               className="block w-full min-h-[44px] touch-manipulation rounded-md border border-neutral-700 bg-neutral-950 px-3 py-3 text-xs"
@@ -196,10 +172,10 @@ export default function HomeClient() {
           </label>
           <button
             onClick={handlePlay}
-            disabled={!videoKey.trim() || playLoading}
+            disabled={!videoKey.trim()}
             className="min-h-[44px] touch-manipulation rounded-md bg-white px-4 py-3 text-xs font-semibold text-black transition-colors active:bg-neutral-200 disabled:opacity-50"
           >
-            {playLoading ? "获取播放 URL..." : "播放视频"}
+            播放视频
           </button>
           {playError && <div className="text-xs text-red-300">错误：{playError}</div>}
         </div>
@@ -207,7 +183,7 @@ export default function HomeClient() {
 
       {playUrl && (
         <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-3">
-          <div className="mb-2 text-xs text-neutral-300">R2 播放（预签名 URL）</div>
+          <div className="mb-2 text-xs text-neutral-300">R2 播放（流式代理）</div>
           <VideoPlayer key={playUrl} src={playUrl} poster="" vastTagUrl={null} />
         </div>
       )}
