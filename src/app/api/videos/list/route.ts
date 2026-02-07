@@ -21,6 +21,14 @@ function isVideoFile(key: string): boolean {
   return VIDEO_EXTENSIONS.some((ext) => lowerKey.endsWith(ext));
 }
 
+/**
+ * 根据视频 key 推断默认封面路径。例如 ep1.mp4 -> covers/ep1-zh.jpg
+ */
+function inferDefaultCoverKey(videoKey: string): string {
+  const basename = videoKey.split("/").pop()?.replace(/\.[^.]+$/, "") || videoKey;
+  return `covers/${basename}-zh.jpg`;
+}
+
 export async function GET(req: Request) {
   try {
     if (!env.R2_BUCKET) {
@@ -89,12 +97,12 @@ export async function GET(req: Request) {
           if (localeData && localeData.title && localeData.title.trim() !== "") {
             displayTitle = localeData.title;
             displayDescription = localeData.description || "";
-            displayCoverUrl = localeData.coverUrl;
+            displayCoverUrl = localeData.coverUrl || inferDefaultCoverKey(key);
           } else {
-            // 无该语言元数据时，用文件名作为标题，仍显示该视频
+            // 无该语言元数据时，用文件名作为标题，推断默认封面 covers/{basename}-zh.jpg
             displayTitle = key.split("/").pop()?.replace(/\.[^.]+$/, "") || key;
             displayDescription = "";
-            displayCoverUrl = undefined;
+            displayCoverUrl = inferDefaultCoverKey(key);
           }
         } else {
           // 如果没有指定语言（后台管理），优先使用第一个有标题的语言，否则使用文件名
@@ -109,18 +117,18 @@ export async function GET(req: Request) {
               const localeData = metadata.locales[firstLocaleWithTitle];
               displayTitle = localeData.title;
               displayDescription = localeData.description || "";
-              displayCoverUrl = localeData.coverUrl;
+              displayCoverUrl = localeData.coverUrl || inferDefaultCoverKey(key);
             } else {
-              // 如果没有找到任何有标题的语言，使用文件名
+              // 如果没有找到任何有标题的语言，使用文件名和推断封面
               displayTitle = key.split("/").pop()?.replace(/\.[^.]+$/, "") || key;
               displayDescription = "";
-              displayCoverUrl = undefined;
+              displayCoverUrl = inferDefaultCoverKey(key);
             }
           } else {
-            // 如果没有元数据，使用文件名
+            // 如果没有元数据，使用文件名和推断封面 covers/{basename}-zh.jpg
             displayTitle = key.split("/").pop()?.replace(/\.[^.]+$/, "") || key;
             displayDescription = "";
-            displayCoverUrl = undefined;
+            displayCoverUrl = inferDefaultCoverKey(key);
           }
         }
 

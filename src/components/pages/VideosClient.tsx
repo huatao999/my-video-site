@@ -31,30 +31,9 @@ export default function VideosClient() {
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
 
-  async function loadCoverUrl(coverKey: string): Promise<string | null> {
-    try {
-      const res = await fetch(`/api/videos/presign-play?key=${encodeURIComponent(coverKey)}&expires=3600`);
-      if (res.ok) {
-        const data = await res.json();
-        return data.url;
-      }
-    } catch (e) {
-      console.error("Failed to load cover:", e);
-    }
-    return null;
-  }
-
-  async function loadVideoUrl(videoKey: string): Promise<string | null> {
-    try {
-      const res = await fetch(`/api/videos/presign-play?key=${encodeURIComponent(videoKey)}&expires=3600`);
-      if (res.ok) {
-        const data = await res.json();
-        return data.url;
-      }
-    } catch (e) {
-      console.error("Failed to load video URL:", e);
-    }
-    return null;
+  // 封面使用流式代理 URL，避免 R2 预签名 URL 的 CORS 问题
+  function getCoverStreamUrl(coverKey: string): string {
+    return `/api/videos/stream?key=${encodeURIComponent(coverKey)}`;
   }
 
   async function loadVideos(prefix?: string, continuationToken?: string) {
@@ -76,20 +55,18 @@ export default function VideosClient() {
 
       const data = (await res.json()) as VideosResponse;
 
-      const videosWithCovers = await Promise.all(
-        data.videos.map(async (video) => {
-          if (video.coverUrl) {
-            let coverUrl = video.coverUrl;
-            if (!coverUrl.startsWith("http://") && !coverUrl.startsWith("https://") && !coverUrl.startsWith("data:")) {
-              const presignedCoverUrl = await loadCoverUrl(coverUrl);
-              if (presignedCoverUrl) coverUrl = presignedCoverUrl;
-            }
-            return {...video, coverUrl};
-          }
-          const videoUrl = await loadVideoUrl(video.key);
-          return {...video, videoPreviewUrl: videoUrl || undefined};
-        })
-      );
+      const videosWithCovers = data.videos.map((video) => {
+        if (video.coverUrl) {
+          const coverUrl =
+            video.coverUrl.startsWith("http://") ||
+            video.coverUrl.startsWith("https://") ||
+            video.coverUrl.startsWith("data:")
+              ? video.coverUrl
+              : getCoverStreamUrl(video.coverUrl);
+          return {...video, coverUrl};
+        }
+        return video;
+      });
 
       if (continuationToken) {
         setVideos((prev) => [...prev, ...videosWithCovers]);
