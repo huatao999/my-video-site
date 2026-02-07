@@ -1,0 +1,13 @@
+# Netlify 部署配置 - Next.js 视频站
+# Netlify 会自动检测 Next.js 并使用 OpenNext 适配器
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# 必需的环境变量（请在 Netlify 控制台设置，不要提交密钥到代码库）：
+# R2_ACCOUNT_ID      - Cloudflare R2 账户 ID
+# R2_ACCESS_KEY_ID   - R2 Access Key ID（32 位）
+# R2_SECRET_ACCESS_KEY - R2 Secret Access Key
+# R2_BUCKET          - R2 存储桶名称
+# ADMIN_PASSWORD     - 后台管理员密码（可选，用于 /admin 登录）
