@@ -2,7 +2,7 @@ import {notFound} from "next/navigation";
 import VideoDetailClient from "@/components/pages/VideoDetailClient";
 
 type PageProps = {
-  params: Promise<{locale: string; key: string}>;
+  params: Promise<{key: string}>;
 };
 
 export default async function VideoDetailPage({params}: PageProps) {

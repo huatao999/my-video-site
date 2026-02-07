@@ -1,13 +1,11 @@
-import {useTranslations} from "next-intl";
+import {getTranslations, getLocale} from "next-intl/server";
 import VideosClient from "@/components/pages/VideosClient";
 
-type Props = {
-  params: Promise<{locale: string}>;
-};
+export const dynamic = "force-dynamic";
 
-export default async function VideosPage({params}: Props) {
-  const {locale} = await params;
-  const t = useTranslations("videos");
+export default async function VideosPage() {
+  const t = await getTranslations("videos");
+  const locale = (await getLocale()) || "zh";
 
   return (
     <div className="space-y-6">

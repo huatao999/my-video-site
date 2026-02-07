@@ -100,7 +100,7 @@ export default function VideosClient({locale = "zh"}: {locale?: string}) {
   }
 
   function getVideoUrl(videoKey: string): string {
-    return `/${locale}/videos/${encodeURIComponent(videoKey)}`;
+    return `/videos/${encodeURIComponent(videoKey)}`;
   }
 
   function formatFileSize(bytes: number): string {

@@ -99,7 +99,7 @@ export default function HomeClient({locale = "zh"}: {locale?: string}) {
           {videos.map((video) => (
             <Link
               key={video.key}
-              href={`/${locale}/videos/${encodeURIComponent(video.key)}`}
+              href={`/videos/${encodeURIComponent(video.key)}`}
               className="group overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900/30 transition-all hover:border-neutral-700 hover:bg-neutral-900/50 active:bg-neutral-900/60 touch-manipulation"
             >
               <div className="aspect-video w-full overflow-hidden bg-neutral-950">

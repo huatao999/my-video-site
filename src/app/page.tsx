@@ -1,6 +1,25 @@
-import {redirect} from "next/navigation";
-import {defaultLocale} from "@/i18n/locales";
+import HomeClient from "@/components/pages/HomeClient";
+import AdStatus from "@/components/ads/AdStatus";
+import {Suspense} from "react";
+import {getLocale} from "next-intl/server";
 
-export default function RootPage() {
-  redirect(`/${defaultLocale}`);
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const locale = (await getLocale()) || "zh";
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">视频站</h1>
+        <p className="text-sm text-neutral-300">Next.js + Cloudflare R2/CDN</p>
+      </div>
+
+      <AdStatus />
+
+      <Suspense>
+        <HomeClient locale={locale} />
+      </Suspense>
+    </div>
+  );
 }

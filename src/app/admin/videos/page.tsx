@@ -25,34 +25,9 @@ type VideosResponse = {
   keyCount: number;
 };
 
-// 加载封面图片的预签名 URL
-async function loadCoverUrl(coverKey: string): Promise<string | null> {
-  try {
-    const res = await fetch(`/api/videos/presign-play?key=${encodeURIComponent(coverKey)}&expires=3600`);
-    if (res.ok) {
-      const data = await res.json();
-      return data.url;
-    }
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error("Failed to load cover:", e);
-  }
-  return null;
-}
-
-// 加载视频文件的预签名 URL（用于生成封面预览）
-async function loadVideoUrl(videoKey: string): Promise<string | null> {
-  try {
-    const res = await fetch(`/api/videos/presign-play?key=${encodeURIComponent(videoKey)}&expires=3600`);
-    if (res.ok) {
-      const data = await res.json();
-      return data.url;
-    }
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error("Failed to load video URL:", e);
-  }
-  return null;
+// 使用流式代理 URL 作为封面（避免 R2 预签名 URL 的 CORS 问题）
+function getCoverStreamUrl(coverKey: string): string {
+  return `/api/videos/stream?key=${encodeURIComponent(coverKey)}`;
 }
 
 export default function AdminVideosPage() {
@@ -83,35 +58,19 @@ export default function AdminVideosPage() {
 
       const data = (await res.json()) as VideosResponse;
       
-      // 加载封面图片或视频文件的预签名 URL
-      const videosWithCovers = await Promise.all(
-        data.videos.map(async (video) => {
-          if (video.coverUrl) {
-            // 如果有封面 URL（可能是 R2 key），加载封面的预签名 URL
-            // coverUrl 可能是完整的 URL 或者是 R2 key
-            let coverUrl = video.coverUrl;
-            if (!coverUrl.startsWith("http://") && !coverUrl.startsWith("https://") && !coverUrl.startsWith("data:")) {
-              // 如果是 R2 key，需要获取预签名 URL
-              const presignedCoverUrl = await loadCoverUrl(coverUrl);
-              if (presignedCoverUrl) {
-                coverUrl = presignedCoverUrl;
-              } else {
-                // eslint-disable-next-line no-console
-                console.warn(`Failed to load cover URL for ${video.key}, coverUrl: ${video.coverUrl}`);
-              }
-            }
-            return {...video, coverUrl};
-          } else {
-            // 如果没有封面，使用视频文件本身作为预览
-            const videoUrl = await loadVideoUrl(video.key);
-            if (!videoUrl) {
-              // eslint-disable-next-line no-console
-              console.warn(`Failed to load video URL for ${video.key}`);
-            }
-            return {...video, videoPreviewUrl: videoUrl || undefined};
-          }
-        })
-      );
+      // 使用流式代理 URL 作为封面
+      const videosWithCovers = data.videos.map((video) => {
+        if (video.coverUrl) {
+          const coverUrl =
+            video.coverUrl.startsWith("http://") ||
+            video.coverUrl.startsWith("https://") ||
+            video.coverUrl.startsWith("data:")
+              ? video.coverUrl
+              : getCoverStreamUrl(video.coverUrl);
+          return {...video, coverUrl};
+        }
+        return video;
+      });
 
       if (continuationToken) {
         setVideos((prev) => [...prev, ...videosWithCovers]);

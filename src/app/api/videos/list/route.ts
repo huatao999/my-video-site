@@ -153,7 +153,16 @@ export async function GET(req: Request) {
           } : undefined,
         };
       })
-      .filter((v) => v !== null) as Array<{
+      .filter((v) => v !== null)
+      .filter((v) => {
+        // 指定 locale 时按 key 过滤：zh 不显示 _en.mp4，en 只显示 _en.mp4
+        if (!locale) return true;
+        const key = v.key;
+        const endsWithEn = key.endsWith("_en.mp4") || key.toLowerCase().endsWith("_en.webm");
+        if (locale === "zh") return !endsWithEn;
+        if (locale === "en") return endsWithEn;
+        return true;
+      }) as Array<{
       key: string;
       size: number;
       lastModified: string;

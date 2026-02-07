@@ -9,10 +9,9 @@ export default function Navigation({locale}: {locale: Locale}) {
   const t = useTranslations("navigation");
   const pathname = usePathname();
 
-  const base = `/${locale}`;
   const navItems = [
-    {href: base, label: t("home")},
-    {href: `${base}/videos`, label: t("videos")},
+    {href: "/", label: t("home")},
+    {href: "/videos", label: t("videos")},
   ];
 
   return (

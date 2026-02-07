@@ -1,33 +1,27 @@
 "use client";
 
-import {usePathname} from "next/navigation";
 import {useRouter} from "next/navigation";
 import {locales, type Locale} from "@/i18n/locales";
 
-function replaceLocaleInPath(pathname: string, nextLocale: string): string {
-  const segments = pathname.split("/").filter(Boolean);
-  if (segments.length === 0) return `/${nextLocale}`;
-  if ((locales as readonly string[]).includes(segments[0])) {
-    segments[0] = nextLocale;
-    return `/${segments.join("/")}`;
-  }
-  return `/${nextLocale}/${segments.join("/")}`;
+function setLocaleCookie(locale: string) {
+  document.cookie = `NEXT_LOCALE=${locale};path=/;max-age=31536000`;
 }
 
 export default function LanguageSwitcher({currentLocale}: {currentLocale: Locale}) {
-  const pathname = usePathname() || "/";
   const router = useRouter();
 
   return (
     <nav className="flex items-center gap-1.5 sm:gap-2 text-xs">
       {(locales as readonly Locale[]).map((loc) => {
-        const href = replaceLocaleInPath(pathname, loc);
         const active = loc === currentLocale;
         return (
           <button
             key={loc}
             type="button"
-            onClick={() => router.push(href)}
+            onClick={() => {
+              setLocaleCookie(loc);
+              router.refresh();
+            }}
             className={[
               "rounded-md px-2.5 py-2 transition touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center",
               active ? "bg-white text-black" : "bg-neutral-800 text-neutral-200 hover:bg-neutral-700 active:bg-neutral-600",
