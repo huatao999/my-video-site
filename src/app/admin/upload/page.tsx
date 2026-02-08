@@ -3,6 +3,7 @@
 import {useState} from "react";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
+import {uploadFileInChunks, clearState} from "@/lib/upload/chunked-upload";
 
 type UploadProgress = {
   loaded: number;
@@ -51,38 +52,13 @@ export default function AdminUploadPage() {
       // 仅英文时自动命名为 *_en.mp4
       const finalKey = langEn && !langZh ? `${base}_en${ext}` : rawKey;
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("key", finalKey);
-      formData.append("contentType", file.type || "video/mp4");
-
-      const xhr = new XMLHttpRequest();
-
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          setProgress({
-            loaded: e.loaded,
-            total: e.total,
-            percentage: Math.round((e.loaded / e.total) * 100),
-          });
-        }
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        xhr.addEventListener("load", () => {
-          if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else {
-            try {
-              const data = JSON.parse(xhr.responseText);
-              reject(new Error(data.error || data.message || `上传失败：HTTP ${xhr.status}`));
-            } catch {
-              reject(new Error(`上传失败：HTTP ${xhr.status}`));
-            }
-          }
-        });
-        xhr.addEventListener("error", () => reject(new Error("上传失败：网络错误")));
-        xhr.open("POST", "/api/videos/upload");
-        xhr.send(formData);
+      await uploadFileInChunks(file, finalKey, file.type || "video/mp4", {
+        onProgress: (loaded, total, percentage) => {
+          setProgress({loaded, total, percentage});
+        },
+        onResume: (completed, total) => {
+          // Optional: could show a toast "Resuming: X/Y parts already uploaded"
+        },
       });
 
       const metaTitle = title.trim() || finalKey;
@@ -118,8 +94,10 @@ export default function AdminUploadPage() {
 
       setTimeout(() => router.push("/admin/videos"), 3000);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "未知错误");
+      const msg = e instanceof Error ? e.message : "未知错误";
+      setError(msg);
       setProgress(null);
+      // Don't clear state on error - allow resume on retry
     } finally {
       setUploading(false);
     }
@@ -266,7 +244,21 @@ export default function AdminUploadPage() {
         )}
 
         {error && (
-          <div className="rounded-md border border-red-800 bg-red-900/20 px-4 py-3 text-sm text-red-300">{error}</div>
+          <div className="space-y-2">
+            <div className="rounded-md border border-red-800 bg-red-900/20 px-4 py-3 text-sm text-red-300">
+              {error}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                clearState();
+                setError(null);
+              }}
+              className="text-xs text-neutral-400 underline hover:text-neutral-200"
+            >
+              清除续传数据并重新开始
+            </button>
+          </div>
         )}
 
         {success && (
