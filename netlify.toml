@@ -3,9 +3,10 @@
 
 [build]
   command = "npm run build"
-
-# 不要设置 publish = ".next"，否则 Netlify 会错误地当作静态站，导致 404
-# Next.js 插件会自动处理发布目录和 SSR
+  # 必须显式设置 publish 为子目录，否则 Netlify UI「未设置」会解析为仓库根目录，
+  # 与 base 相同，触发插件错误：Your publish directory cannot be the same as the base directory.
+  # 设为 .next 后由插件正确接管 SSR 部署（不是当静态站发布）。
+  publish = ".next"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
