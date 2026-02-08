@@ -1,9 +1,14 @@
 # Netlify 部署配置 - Next.js 视频站
-# Netlify 会自动检测 Next.js 并使用 OpenNext 适配器
+# 必须使用 @netlify/plugin-nextjs 才能正确部署 Next.js（SSR、API 等）
 
 [build]
   command = "npm run build"
-  publish = ".next"
+
+# 不要设置 publish = ".next"，否则 Netlify 会错误地当作静态站，导致 404
+# Next.js 插件会自动处理发布目录和 SSR
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 # 必需的环境变量（请在 Netlify Site settings > Environment variables 中设置）：
 # R2_ACCOUNT_ID      - Cloudflare R2 账户 ID
