@@ -3,8 +3,7 @@
 
 [build]
   command = "npm run build"
-  publish = "out"
-
+  
 # 不要设置 publish = ".next"，否则 Netlify 会错误地当作静态站，导致 404
 # Next.js 插件会自动处理发布目录和 SSR
 
