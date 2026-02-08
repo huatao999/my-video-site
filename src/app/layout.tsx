@@ -1,6 +1,7 @@
 import type {Metadata} from "next";
 import type {Locale} from "@/i18n/locales";
 import {Geist, Geist_Mono} from "next/font/google";
+import Link from "next/link";
 import {NextIntlClientProvider} from "next-intl";
 import {getMessages, getLocale} from "next-intl/server";
 import "./globals.css";
@@ -48,7 +49,15 @@ export default async function RootLayout({
             </header>
             <main className="mx-auto max-w-5xl px-4 pb-10">{children}</main>
             <footer className="mx-auto max-w-5xl px-4 py-8 text-xs text-neutral-400">
-              © {new Date().getFullYear()} 视频站
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <span>© {new Date().getFullYear()} Video Platform</span>
+                <nav className="flex flex-wrap gap-4">
+                  <Link href="/about" className="hover:text-neutral-200">About Us</Link>
+                  <Link href="/privacy" className="hover:text-neutral-200">Privacy Policy</Link>
+                  <Link href="/terms" className="hover:text-neutral-200">Terms of Service</Link>
+                  <Link href="/dmca" className="hover:text-neutral-200">DMCA</Link>
+                </nav>
+              </div>
             </footer>
           </div>
         </NextIntlClientProvider>

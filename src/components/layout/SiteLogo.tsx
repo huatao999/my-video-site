@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 
 export default function SiteLogo() {
@@ -7,9 +8,10 @@ export default function SiteLogo() {
     <Link
       href="/"
       prefetch={true}
-      className="flex min-h-[44px] items-center text-sm font-semibold tracking-wide text-neutral-50 underline-offset-4 transition-colors duration-200 hover:text-white hover:underline touch-manipulation"
+      className="flex min-h-[44px] items-center touch-manipulation"
+      aria-label="Home"
     >
-      视频站
+      <Image src="/biao.png" alt="Logo" width={120} height={44} className="h-9 w-auto object-contain" priority />
     </Link>
   );
 }
