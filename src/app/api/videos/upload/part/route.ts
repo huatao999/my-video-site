@@ -3,7 +3,11 @@ import {z} from "zod";
 import {env} from "@/lib/env";
 import {getR2Client} from "@/lib/r2/client";
 
-const MAX_PART_SIZE = 5 * 1024 * 1024; // 5MB, under Netlify 6MB request limit
+// Netlify Functions 单次请求体上限约为 6MB。
+// 由于这里使用 multipart/form-data，实际请求体大小 > 纯文件大小，
+// 若设置为 5MB，编码后的体积可能逼近甚至超过 6MB，导致 Netlify 在到达函数前就直接返回 Internal Error。
+// 为了避免这种情况，将服务器端允许的分片大小与前端 CHUNK_SIZE 保持一致：2MB。
+const MAX_PART_SIZE = 2 * 1024 * 1024; // 2MB, stay well below Netlify 6MB limit
 
 export async function POST(req: Request) {
   try {

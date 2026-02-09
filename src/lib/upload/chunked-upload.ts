@@ -1,9 +1,14 @@
 /**
  * Chunked upload with resumability and retry.
- * Chunk size 5MB to stay under Netlify 6MB request limit.
+ * 注意：Netlify Functions 单次请求体有 ~6MB 限制。
+ * 使用 multipart/form-data 时会有额外边界和字段开销，
+ * 5MB 的纯文件在实际请求中可能接近或超过限制，从而直接被 Netlify 拒绝，
+ * 返回「Internal Error. ID: ...」，函数代码甚至不会被执行。
+ *
+ * 因此这里将分片大小降到 2MB，给 Netlify 的编码/头部留出充足余量，
+ * 避免因为请求体过大导致的 500 Internal Error。
  */
-
-const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB per part, safely under Netlify limit
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1500;
 
