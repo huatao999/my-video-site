@@ -1,6 +1,6 @@
 "use client";
 
-import {useMemo} from "react";
+import {useEffect, useState} from "react";
 import {useRouter} from "next/navigation";
 import {useTranslations} from "next-intl";
 import VideoPlayer from "@/components/video/VideoPlayer";
@@ -10,11 +10,46 @@ import CommentSection from "@/components/video/CommentSection";
 export default function VideoDetailClient({videoKey}: {videoKey: string}) {
   const t = useTranslations("videos");
   const router = useRouter();
-  // 使用流式代理 URL，避免 R2 预签名 URL 的 CORS 问题
-  const playUrl = useMemo(
-    () => `/api/videos/stream?key=${encodeURIComponent(videoKey)}`,
-    [videoKey]
-  );
+  const [playUrl, setPlayUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 使用预签名 URL，浏览器直连 R2 播放，避免大文件通过 Netlify 代理的体积和超时限制
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPlayUrl() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await fetch(`/api/videos/presign-play?key=${encodeURIComponent(videoKey)}`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || data.error || `加载播放地址失败: ${res.status}`);
+        }
+        const data = (await res.json()) as {url: string};
+        if (!cancelled) {
+          setPlayUrl(data.url);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          const msg = e instanceof Error ? e.message : "加载播放地址失败";
+          setError(msg);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadPlayUrl();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [videoKey]);
 
   const videoTitle = videoKey.split("/").pop()?.replace(/\.[^.]+$/, "") || videoKey;
 
@@ -35,7 +70,19 @@ export default function VideoDetailClient({videoKey}: {videoKey: string}) {
         <p className="text-xs text-neutral-400">{videoKey}</p>
       </div>
 
-      {playUrl && (
+      {loading && (
+        <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-4 text-sm text-neutral-400">
+          加载播放地址中...
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-xl border border-red-800 bg-red-900/20 p-4 text-sm text-red-300">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && playUrl && (
         <>
           <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-3">
             <VideoPlayer key={playUrl} src={playUrl} poster="" vastTagUrl={null} />
