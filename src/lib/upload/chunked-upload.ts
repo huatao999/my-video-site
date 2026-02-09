@@ -212,7 +212,9 @@ export async function uploadFileInChunks(
 
   if (!completeRes.ok) {
     const err = await completeRes.json().catch(() => ({}));
-    throw new Error(err.error || err.message || "Complete failed");
+    // 优先展示后端返回的详细 message（通常是 R2 的具体错误信息），
+    // 其次才是通用 error 字段，方便后台排查问题。
+    throw new Error(err.message || err.error || "Complete failed");
   }
 
   clearState();
