@@ -64,20 +64,38 @@ export default function AdminUploadPage() {
       }
       const presignData = (await presignRes.json()) as {url: string; key: string};
 
-      // 简单进度：开始 0%，结束 100%
-      setProgress({loaded: 0, total: file.size, percentage: 0});
+      // 使用 XMLHttpRequest 以获得稳定的上传进度事件（fetch 目前在绝大多数浏览器里没有 upload 进度）
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", presignData.url, true);
+        xhr.setRequestHeader("Content-Type", contentType);
 
-      const putRes = await fetch(presignData.url, {
-        method: "PUT",
-        headers: {"Content-Type": contentType},
-        body: file,
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return;
+          const loaded = event.loaded;
+          const total = event.total || file.size;
+          const percentage = Math.round((loaded / total) * 100);
+          setProgress({loaded, total, percentage});
+        };
+
+        xhr.onerror = () => {
+          reject(new Error("上传过程中发生网络错误"));
+        };
+        xhr.onabort = () => {
+          reject(new Error("上传已被取消"));
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            // 确保进度条到 100%
+            setProgress({loaded: file.size, total: file.size, percentage: 100});
+            resolve();
+          } else {
+            reject(new Error(`上传到 R2 失败: ${xhr.status}`));
+          }
+        };
+
+        xhr.send(file);
       });
-      if (!putRes.ok) {
-        const text = await putRes.text().catch(() => "");
-        throw new Error(`上传到 R2 失败: ${putRes.status}${text ? ` - ${text}` : ""}`);
-      }
-
-      setProgress({loaded: file.size, total: file.size, percentage: 100});
 
       const resolvedKey = presignData.key || finalKey;
       const metaTitle = title.trim() || finalKey;
