@@ -3,7 +3,6 @@
 import {useState} from "react";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
-import {uploadFileInChunks, clearState} from "@/lib/upload/chunked-upload";
 
 type UploadProgress = {
   loaded: number;
@@ -51,16 +50,36 @@ export default function AdminUploadPage() {
 
       // 仅英文时自动命名为 *_en.mp4
       const finalKey = langEn && !langZh ? `${base}_en${ext}` : rawKey;
+      const contentType = file.type || "video/mp4";
 
-      await uploadFileInChunks(file, finalKey, file.type || "video/mp4", {
-        onProgress: (loaded, total, percentage) => {
-          setProgress({loaded, total, percentage});
-        },
-        onResume: (completed, total) => {
-          // Optional: could show a toast "Resuming: X/Y parts already uploaded"
-        },
+      // 使用预签名 URL，浏览器直传到 R2，绕过 Netlify 函数体积限制和 multipart 最小分片限制
+      const presignRes = await fetch("/api/videos/presign-upload", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({key: finalKey, contentType}),
       });
+      if (!presignRes.ok) {
+        const data = await presignRes.json().catch(() => ({}));
+        throw new Error(data.message || data.error || `预签名上传失败: ${presignRes.status}`);
+      }
+      const presignData = (await presignRes.json()) as {url: string; key: string};
 
+      // 简单进度：开始 0%，结束 100%
+      setProgress({loaded: 0, total: file.size, percentage: 0});
+
+      const putRes = await fetch(presignData.url, {
+        method: "PUT",
+        headers: {"Content-Type": contentType},
+        body: file,
+      });
+      if (!putRes.ok) {
+        const text = await putRes.text().catch(() => "");
+        throw new Error(`上传到 R2 失败: ${putRes.status}${text ? ` - ${text}` : ""}`);
+      }
+
+      setProgress({loaded: file.size, total: file.size, percentage: 100});
+
+      const resolvedKey = presignData.key || finalKey;
       const metaTitle = title.trim() || finalKey;
       const metaDescription = description.trim();
 
@@ -69,7 +88,7 @@ export default function AdminUploadPage() {
       if (langEn) localesToSave.push("en");
 
       for (const loc of localesToSave) {
-        const res = await fetch(`/api/admin/videos/${encodeURIComponent(finalKey)}/metadata`, {
+        const res = await fetch(`/api/admin/videos/${encodeURIComponent(resolvedKey)}/metadata`, {
           method: "PUT",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
@@ -244,20 +263,8 @@ export default function AdminUploadPage() {
         )}
 
         {error && (
-          <div className="space-y-2">
-            <div className="rounded-md border border-red-800 bg-red-900/20 px-4 py-3 text-sm text-red-300">
-              {error}
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                clearState();
-                setError(null);
-              }}
-              className="text-xs text-neutral-400 underline hover:text-neutral-200"
-            >
-              清除续传数据并重新开始
-            </button>
+          <div className="rounded-md border border-red-800 bg-red-900/20 px-4 py-3 text-sm text-red-300">
+            {error}
           </div>
         )}
 
