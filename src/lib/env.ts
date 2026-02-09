@@ -3,13 +3,12 @@ import {z} from "zod";
 const envSchema = z.object({
   // Cloudflare R2 (S3-compatible)
   R2_ACCOUNT_ID: z.string().optional(),
-  R2_ACCESS_KEY_ID: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || val.length === 32,
-      "R2_ACCESS_KEY_ID must be exactly 32 characters (S3-compatible access key, not Cloudflare API token)",
-    ),
+  // R2_ACCESS_KEY_ID: 之前为了防止误填 Cloudflare API Token，限制长度必须为 32。
+  // 但在 Netlify 等环境中，如果变量配置有误，会在导入阶段直接抛错，
+  // 导致所有使用 R2 的 API 变成 500 Internal Error（Netlify 显示带 ID 的 Internal Error 页面）。
+  // 为了让错误在业务代码里被捕获并返回更友好的 JSON，而不是函数直接崩溃，
+  // 这里放宽为任意非空字符串，具体校验和错误提示交给调用 R2 的代码处理。
+  R2_ACCESS_KEY_ID: z.string().optional(),
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET: z.string().optional(),
   // 可选：R2 对象键前缀。若视频在 my-video-site/ 下，则设为 "my-video-site/"
