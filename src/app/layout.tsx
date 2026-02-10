@@ -1,6 +1,8 @@
 import type {Metadata} from "next";
 import type {Locale} from "@/i18n/locales";
 import {Geist, Geist_Mono} from "next/font/google";
+import Script from "next/script";
+import {env} from "@/lib/env";
 import Link from "next/link";
 import {NextIntlClientProvider} from "next-intl";
 import {getMessages, getLocale} from "next-intl/server";
@@ -24,6 +26,9 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "视频站",
   description: "中文/英文视频网站",
+  ...(env.MONETAG_VERIFICATION_CONTENT && {
+    other: {"monetag-site-verification": env.MONETAG_VERIFICATION_CONTENT},
+  }),
 };
 
 export default async function RootLayout({
@@ -35,8 +40,19 @@ export default async function RootLayout({
   const locale = (localeRaw === "zh" || localeRaw === "en") ? localeRaw : "zh";
   const messages = await getMessages();
 
+  const monetagEnabled =
+    env.MONETAG_SCRIPT_SRC && env.MONETAG_ZONE_ID;
+
   return (
     <html lang={locale === "zh" ? "zh-CN" : "en"}>
+      {monetagEnabled && (
+        <Script
+          src={env.MONETAG_SCRIPT_SRC!}
+          strategy="afterInteractive"
+          data-zone={env.MONETAG_ZONE_ID}
+          data-sdk={`show_${env.MONETAG_ZONE_ID}`}
+        />
+      )}
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <div className="min-h-dvh bg-neutral-950 text-neutral-50">

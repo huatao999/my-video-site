@@ -32,6 +32,16 @@ const envSchema = z.object({
     .transform((val) => val === "true" || val === "1"),
   // Admin authentication
   ADMIN_PASSWORD: z.string().optional(),
+  // Monetag / PropellerAds 站点验证
+  // 方法一（推荐）：从 Monetag 验证页面选择「插入 meta 标签」，复制 content 值填入
+  MONETAG_VERIFICATION_CONTENT: z.string().optional(),
+  // 方法二：从 Monetag 验证页面下载 sw.js 文件，将完整文件内容粘贴到此变量（支持多行）
+  MONETAG_SW_JS_CONTENT: z.string().optional(),
+  // Monetag / PropellerAds 广告展示（验证通过后在 Monetag 创建 MultiTag 获取）
+  // 填入 Monetag 提供的广告脚本完整 URL（MultiTag 代码中的 src）
+  MONETAG_SCRIPT_SRC: z.string().optional(),
+  // 填入 Monetag 提供的 zone ID（MultiTag 代码中的 data-zone 值）
+  MONETAG_ZONE_ID: z.string().optional(),
 });
 
 export const env = envSchema.parse({
@@ -50,5 +60,9 @@ export const env = envSchema.parse({
   AD_PROVIDER: process.env.AD_PROVIDER,
   ADS_ENABLED: process.env.ADS_ENABLED,
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+  MONETAG_VERIFICATION_CONTENT: process.env.MONETAG_VERIFICATION_CONTENT,
+  MONETAG_SW_JS_CONTENT: process.env.MONETAG_SW_JS_CONTENT,
+  MONETAG_SCRIPT_SRC: process.env.MONETAG_SCRIPT_SRC,
+  MONETAG_ZONE_ID: process.env.MONETAG_ZONE_ID,
 });
 
